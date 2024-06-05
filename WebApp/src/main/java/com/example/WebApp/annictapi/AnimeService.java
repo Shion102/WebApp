@@ -11,7 +11,7 @@ public class AnimeService implements AnimeServiceIf {
     private AnimeDao animeDao;
 
     @Override
-    public HashMap<String, Object> searchAnime(String name, String year, String season, int page) {
-        return animeDao.searchAnime(name, year, season, page);
+    public HashMap<String, Object> searchAnime(String name, String year, String season, String sort, int page) {
+        return animeDao.searchAnime(name, year, season, sort, page);
     }
 }

@@ -21,7 +21,34 @@ public class WebAppController {
 
     @GetMapping("index")
     public String index() {
-        Map<String, Object> map = animeServiceIf.searchAnime("ハイキュー", "", "", 1);
+//        Map<String, Object> map = animeServiceIf.searchAnime("ハイキュー", "", "", 1);
+//        List<Anime> animeList = (List<Anime>) map.get("animeList");
+//        int totalCount = (int) map.get("totalCount");
+//        int nextPage = (int) map.get("nextPage");
+//        int prevPage = (int) map.get("prevPage");
+//
+//        for (Anime anime : Objects.requireNonNull(animeList)) {
+//            System.out.println(
+//                    "ID:" + anime.getId() +
+//                            " TITLE:" + anime.getTitle() +
+//                            " MEDIA:" + anime.getMedia() +
+//                            " OFFICIALSITE:" + anime.getOfficialSite() +
+//                            " IMAGEURL:" + anime.getOgImageUrl() +
+//                            " SEASON:" + anime.getSeason());
+//        }
+//        System.out.println(totalCount + " " + prevPage + " " + nextPage);
+        return "index";
+    }
+
+
+    @GetMapping("api/anime")
+    public ResponseEntity<Map<String, Object>> getAnime(
+            @RequestParam(name="title") String title,
+            @RequestParam(name="year") String year,
+            @RequestParam(name="season") String season,
+            @RequestParam(name="sort") String sort,
+            @RequestParam(name="page") int page) {
+        Map<String, Object> map = animeServiceIf.searchAnime(title, year, season, sort, page);
         List<Anime> animeList = (List<Anime>) map.get("animeList");
         int totalCount = (int) map.get("totalCount");
         int nextPage = (int) map.get("nextPage");
@@ -35,32 +62,6 @@ public class WebAppController {
                     " OFFICIALSITE:" + anime.getOfficialSite() +
                     " IMAGEURL:" + anime.getOgImageUrl() +
                     " SEASON:" + anime.getSeason());
-        }
-        System.out.println(totalCount + " " + prevPage + " " + nextPage);
-        return "index";
-    }
-
-
-    @GetMapping("api/anime")
-    public ResponseEntity<Map<String, Object>> getAnime(
-            @RequestParam(name="title") String title,
-            @RequestParam(name="year") String year,
-            @RequestParam(name="season") String season,
-            @RequestParam(name="page") int page) {
-        Map<String, Object> map = animeServiceIf.searchAnime(title, year, season, page);
-        List<Anime> animeList = (List<Anime>) map.get("animeList");
-        int totalCount = (int) map.get("totalCount");
-        int nextPage = (int) map.get("nextPage");
-        int prevPage = (int) map.get("prevPage");
-
-        for (Anime anime : Objects.requireNonNull(animeList)) {
-            System.out.println(
-                    "ID:" + anime.getId() +
-                            " TITLE:" + anime.getTitle() +
-                            " MEDIA:" + anime.getMedia() +
-                            " OFFICIALSITE:" + anime.getOfficialSite() +
-                            " IMAGEURL:" + anime.getOgImageUrl() +
-                            " SEASON:" + anime.getSeason());
         }
         System.out.println(totalCount + " " + prevPage + " " + nextPage);
         try {

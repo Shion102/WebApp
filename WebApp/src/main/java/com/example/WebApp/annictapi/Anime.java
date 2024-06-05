@@ -9,5 +9,6 @@ public class Anime {
     private String media;
     private String officialSite;
     private String ogImageUrl;
+    private String epCount;
     private String season;
 }

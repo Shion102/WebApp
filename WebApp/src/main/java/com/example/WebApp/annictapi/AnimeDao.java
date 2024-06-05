@@ -18,18 +18,26 @@ import java.util.Objects;
 public class AnimeDao implements AnimeDaoIf {
 
     @Override
-    public HashMap<String, Object> searchAnime(String name, String year, String season, int page) {
+    public HashMap<String, Object> searchAnime(String name, String year, String season, String sort, int page) {
         final String API_URL = "https://api.annict.com/v1/";
-        final String validSeason = year.isEmpty() | season.isEmpty() ? null : year + "-" + season;
+        final String validSeason = (year.isEmpty() | season.isEmpty()) ? "" : year + "-" + season;
+        final String validSort = switch (sort) {
+                                     case "id"             -> "id=asc";
+                                     case "season-asc"     -> "season=asc";
+                                     case "season-desc"    -> "season=desc";
+                                     case "watchers_count" -> "watchers_count=desc";
+                                     default -> "id=asc";
+                                 };
+        System.out.println(validSort);
         final String API_FIELD = String.format(
                 """
                 works?\
-                fields=id,title,media_text,official_site_url,season_name_text,images&\
+                fields=id,title,media_text,official_site_url,season_name_text,images,episodes_count&\
                 filter_title=%s&\
                 filter_season=%s&\
-                per_page=50&\
-                sort_season=asc&\
-                """, name, year, validSeason);
+                per_page=30&\
+                sort_%s&\
+                """, name, validSeason, validSort);
         final String API_PAGE = "page=" + page + "&";
         final String AUTH_TOKEN = "access_token=aYE3_-ioQ_P5AUx0JzNKlsAMiD0yAlQ3yo_HreWm0do";
 
@@ -58,12 +66,27 @@ public class AnimeDao implements AnimeDaoIf {
                 anime.setTitle(workObject.getString("title"));
                 anime.setMedia(workObject.getString("media_text"));
                 anime.setOfficialSite(workObject.getString("official_site_url"));
-                anime.setSeason(workObject.getString("season_name_text"));
+
                 String ogImageUrl = workObject.getJSONObject("images")
                         .getJSONObject("facebook")
                         .getString("og_image_url");
                 anime.setOgImageUrl(ogImageUrl);
 
+                try {
+                    if (workObject.getInt("episodes_count") == 0 | workObject.getString("media_text").equals("映画")) {
+                        anime.setEpCount("1");
+                    } else {
+                        anime.setEpCount(String.valueOf(workObject.getInt("episodes_count")));
+                    }
+                } catch (JSONException e) {
+                    anime.setEpCount("話数不明");
+                }
+
+                try {
+                    anime.setSeason(workObject.getString("season_name_text"));
+                } catch (JSONException e) {
+                    anime.setSeason("時期不明");
+                }
                 animeList.add(anime);
             }
 
