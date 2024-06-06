@@ -1,23 +1,25 @@
 package com.example.WebApp.controller;
 
+import com.example.WebApp.AniLog;
+import com.example.WebApp.AniLogReview;
+import com.example.WebApp.AniLogServiceIf;
 import com.example.WebApp.annictapi.Anime;
 import com.example.WebApp.annictapi.AnimeServiceIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Controller
 public class WebAppController {
     @Autowired
     private AnimeServiceIf animeServiceIf;
+
+    @Autowired
+    private AniLogServiceIf aniLogServiceIf;
 
     @GetMapping("index")
     public String index() {
@@ -32,14 +34,51 @@ public class WebAppController {
 //                    "ID:" + anime.getId() +
 //                            " TITLE:" + anime.getTitle() +
 //                            " MEDIA:" + anime.getMedia() +
-//                            " OFFICIALSITE:" + anime.getOfficialSite() +
 //                            " IMAGEURL:" + anime.getOgImageUrl() +
 //                            " SEASON:" + anime.getSeason());
 //        }
 //        System.out.println(totalCount + " " + prevPage + " " + nextPage);
+
+
+
         return "index";
     }
 
+    @GetMapping("api/anilog")
+    public ResponseEntity<List<Anime>> getAnime() {
+        int user = 2;
+        var allAniLog = aniLogServiceIf.findAllAniLog(user);
+
+        List<Anime> animeList = new ArrayList<>();
+        for (AniLog anilog : allAniLog) {
+            animeList.add( animeServiceIf.searchAnimeId(anilog.getAnime_id()) );
+        }
+        try {
+            return new ResponseEntity<>(animeList, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("api/anilog/detail")
+    public ResponseEntity<Map<String, Object>> getAnilog(@RequestParam(name="anime_id") int animeId) {
+        int user = 2;
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("anime", animeServiceIf.searchAnimeId(animeId));
+        map.put("review", aniLogServiceIf.findByAniLogAnimeId(animeId, user));
+        try {
+            return new ResponseEntity<>(map, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping("api/anilog/insert")
+    public ResponseEntity<Anime> postAnilog(@RequestBody AniLogReview review) {
+        System.out.println(review);
+        aniLogServiceIf.insert(review.getAnimeId(), review.getRate(), review.getComment(), review.getUserId());
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 
     @GetMapping("api/anime")
     public ResponseEntity<Map<String, Object>> getAnime(
@@ -59,7 +98,6 @@ public class WebAppController {
                     "ID:" + anime.getId() +
                     " TITLE:" + anime.getTitle() +
                     " MEDIA:" + anime.getMedia() +
-                    " OFFICIALSITE:" + anime.getOfficialSite() +
                     " IMAGEURL:" + anime.getOgImageUrl() +
                     " SEASON:" + anime.getSeason());
         }

@@ -32,7 +32,7 @@ public class AnimeDao implements AnimeDaoIf {
         final String API_FIELD = String.format(
                 """
                 works?\
-                fields=id,title,media_text,official_site_url,season_name_text,images,episodes_count&\
+                fields=id,title,media_text,season_name_text,images,episodes_count,official_site_url&\
                 filter_title=%s&\
                 filter_season=%s&\
                 per_page=30&\
@@ -65,8 +65,6 @@ public class AnimeDao implements AnimeDaoIf {
                 anime.setId(workObject.getInt("id"));
                 anime.setTitle(workObject.getString("title"));
                 anime.setMedia(workObject.getString("media_text"));
-                anime.setOfficialSite(workObject.getString("official_site_url"));
-
                 String ogImageUrl = workObject.getJSONObject("images")
                         .getJSONObject("facebook")
                         .getString("og_image_url");
@@ -87,6 +85,7 @@ public class AnimeDao implements AnimeDaoIf {
                 } catch (JSONException e) {
                     anime.setSeason("時期不明");
                 }
+                anime.setOfficialSiteUrl(workObject.getString("official_site_url"));
                 animeList.add(anime);
             }
 
@@ -117,6 +116,67 @@ public class AnimeDao implements AnimeDaoIf {
             map.put("nextPage", nextPage);
             map.put("prevPage", prevPage);
             return map;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public Anime searchAnimeId(int id){
+        final String API_URL = "https://api.annict.com/v1/";
+        final String API_FIELD = String.format(
+                """
+                works?\
+                fields=id,title,media_text,season_name_text,images,episodes_count,official_site_url&\
+                filter_ids=%s&\
+                """, id);
+        final String AUTH_TOKEN = "access_token=aYE3_-ioQ_P5AUx0JzNKlsAMiD0yAlQ3yo_HreWm0do";
+
+        String url = API_URL + API_FIELD + AUTH_TOKEN;
+
+        System.out.println(url);
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder().url(url).build();
+
+        try {
+            String responseBody;
+            try (Response response = client.newCall(request).execute()) {
+                responseBody = Objects.requireNonNull(response.body()).string();
+            }
+
+            JSONObject jsonObject = new JSONObject(responseBody);
+            JSONArray worksArray = jsonObject.getJSONArray("works");
+
+            JSONObject workObject = worksArray.getJSONObject(0);
+            Anime anime = new Anime();
+            anime.setId(workObject.getInt("id"));
+            anime.setTitle(workObject.getString("title"));
+            anime.setMedia(workObject.getString("media_text"));
+
+            String ogImageUrl = workObject.getJSONObject("images")
+                    .getJSONObject("facebook")
+                    .getString("og_image_url");
+            anime.setOgImageUrl(ogImageUrl);
+
+            try {
+                if (workObject.getInt("episodes_count") == 0 | workObject.getString("media_text").equals("映画")) {
+                    anime.setEpCount("1");
+                } else {
+                    anime.setEpCount(String.valueOf(workObject.getInt("episodes_count")));
+                }
+            } catch (JSONException e) {
+                anime.setEpCount("話数不明");
+            }
+            anime.setOfficialSiteUrl(workObject.getString("official_site_url"));
+            try {
+                anime.setSeason(workObject.getString("season_name_text"));
+            } catch (JSONException e) {
+                anime.setSeason("時期不明");
+            }
+
+            return anime;
         } catch (IOException e) {
             return null;
         }
