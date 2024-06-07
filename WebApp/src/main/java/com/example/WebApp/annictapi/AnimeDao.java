@@ -39,7 +39,7 @@ public class AnimeDao implements AnimeDaoIf {
                 sort_%s&\
                 """, name, validSeason, validSort);
         final String API_PAGE = "page=" + page + "&";
-        final String AUTH_TOKEN = "access_token=aYE3_-ioQ_P5AUx0JzNKlsAMiD0yAlQ3yo_HreWm0do";
+        final String AUTH_TOKEN = "access_token=Sy5C0wmC9GeityDXOCbtPwuDv8JKYaAZSjxDfPpaWBM";
 
         String url = API_URL + API_FIELD + API_PAGE + AUTH_TOKEN;
 
@@ -130,7 +130,7 @@ public class AnimeDao implements AnimeDaoIf {
                 fields=id,title,media_text,season_name_text,images,episodes_count,official_site_url&\
                 filter_ids=%s&\
                 """, id);
-        final String AUTH_TOKEN = "access_token=aYE3_-ioQ_P5AUx0JzNKlsAMiD0yAlQ3yo_HreWm0do";
+        final String AUTH_TOKEN = "access_token=Sy5C0wmC9GeityDXOCbtPwuDv8JKYaAZSjxDfPpaWBM";
 
         String url = API_URL + API_FIELD + AUTH_TOKEN;
 
