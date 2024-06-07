@@ -54,4 +54,42 @@ public class AniLogDao implements AniLogDaoIf {
                         VALUES
                         (:animeId, :rate, :comment, :userId)""", param);
     }
+
+    @Override
+    public int update(int animeId, int rate, String comment, int userId) {
+        var param = new MapSqlParameterSource();
+        param.addValue("animeId", animeId);
+        param.addValue("rate", rate);
+        param.addValue("comment", comment);
+        param.addValue("userId", userId);
+        return jdbcTemplate.update("""
+                      UPDATE anilog
+                      SET rate = :rate,
+                          comment = :comment
+                      WHERE anime_id = :animeId AND user_id = :userId
+                      """, param);
+    }
+
+    @Override
+    public int delete(int animeId, int userId) {
+        var param = new MapSqlParameterSource();
+        param.addValue("animeId", animeId);
+        param.addValue("userId", userId);
+        return jdbcTemplate.update("""
+                      DELETE FROM anilog
+                      WHERE anime_id = :animeId AND user_id = :userId
+                      """, param);
+    }
+
+    @Override
+    public User findByUser(String userName, String pass) {
+        var param = new MapSqlParameterSource();
+        param.addValue("userName", userName);
+        param.addValue("pass", pass);
+        List<User> list = jdbcTemplate.query("""
+                SELECT * FROM users
+                WHERE username = :userName AND pass = :pass""",
+                param, new DataClassRowMapper<>(User.class));;
+        return list.isEmpty() ? null : list.get(0);
+    }
 }

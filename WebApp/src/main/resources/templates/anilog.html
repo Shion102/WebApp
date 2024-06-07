@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>あにろぐ!!</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <style>
+        .anime-img-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+        }
+        .anime-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        input[type="text"], select {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid #cecece;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        input[type="text"]:focus, select:focus {
+            border-color: #91c6ff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 125, 255, 0.25);
+        }
+        select:disabled {
+            background-color: #ebebeb;
+        }
+
+        /* Modalの高さ設定 */
+        .modal-body {
+          max-height: calc(100svh - 240px);
+          overflow-y: auto;
+        }
+
+        #animeList, #aniLogList {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        @media (min-width: 576px) {
+            #animeList, #aniLogList {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 768px) {
+            #animeList, #aniLogList {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (min-width: 992px) {
+            #animeList, #aniLogList {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .selected {
+            border: 2px solid #007bff;
+            background-color: #e9f5ff;
+        }
+    </style>
+</head>
+<body>
+<div class="container my-1">
+    <div class="card mt-4">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <img src="/images/logo.png" style="width: 40px;">
+            <span class="badge text-primary bg-opacity-100 border border-2 border-primary fs-6 rounded-4">
+                [[ ${session.user.name} ]]
+            </span>
+            <span class="d-none" id="userId"> [[ ${session.user.id} ]] </span>
+            <div class="d-flex gap-3">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                    アニメ追加
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="location.href='/logout'">
+                    ログアウト
+                </button>
+            </div>
+        </div>
+
+    </div>
+    <div class="card mt-4">
+        <div class="card-body" id="aniLogList">
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">アニメ追加</h1>
+            </div>
+            <div class="modal-body">
+
+                <div class="row">
+                    <div class="col-12 col-lg-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                検索
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">作品名</span>
+                                    <input type="text" class="form-control rounded-1" id="title">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">年度</span>
+                                    <select class="form-control rounded-1" id="year"></select>
+                                    <span class="input-group-text">時期</span>
+                                    <select class="form-control rounded-1" id="season" disabled>
+                                        <option value="spring" selected>春(4月~6月)</option>
+                                        <option value="summer">夏(7月~9月)</option>
+                                        <option value="autumn">秋(10月~12月)</option>
+                                        <option value="winter">冬(1月~3月)</option>
+                                    </select>
+                                </div>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">並び替え</span>
+                                    <select class="form-control rounded-1" id="sort">
+                                        <option value="id" selected>デフォルト</option>
+                                        <option value="season-asc">新しい順</option>
+                                        <option value="season-desc">古い順</option>
+                                        <option value="watchers_count">人気順</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-primary w-100" id="searchBtn">検索</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                レビュー
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">評価</span>
+                                    <select class="form-control rounded-1" id="rate">
+                                        <option value="0" selected>未評価</option>
+                                        <option value="5">★★★★★</option>
+                                        <option value="4">★★★★☆</option>
+                                        <option value="3">★★★☆☆</option>
+                                        <option value="2">★★☆☆☆</option>
+                                        <option value="1">★☆☆☆☆</option>
+                                    </select>
+                                </div>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">コメント</span>
+                                    <textarea class="form-control" rows="3" id="comment"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="animeListCard">
+                    <div class="card-header">
+                        検索結果<span id="totalCount"></span>
+                    </div>
+                    <div class="card-body" id="searchResult">
+                        <div id="animeList"></div>
+                        <div class="d-flex justify-content-around mt-3">
+                            <button type="button" class="btn btn-primary" id="prevBtn" value="" disabled>前のページ</button>
+                            <span class="align-content-center" id="showPage"></span>
+                            <button type="button" class="btn btn-primary" id="nextBtn" value="" disabled>次のページ</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary w-100" id="addBtn">追加</button>
+                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="animeIdModal" tabindex="-1" aria-labelledby="animeIdModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white" id="animeIdModalLabel">詳細</h5>
+            </div>
+            <div class="modal-body" id="animeDetail">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white" id="editModalLabel">編集</h5>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">評価</span>
+                    <select class="form-control rounded-1" id="editRate">
+                        <option value="0" selected>未評価</option>
+                        <option value="5">★★★★★</option>
+                        <option value="4">★★★★☆</option>
+                        <option value="3">★★★☆☆</option>
+                        <option value="2">★★☆☆☆</option>
+                        <option value="1">★☆☆☆☆</option>
+                    </select>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">コメント</span>
+                    <textarea class="form-control" rows="3" id="editComment"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary w-100" id="updateBtn" data-bs-target="#animeIdModal" data-bs-toggle="modal">保存</button>
+                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal" data-bs-target="#animeIdModal" data-bs-toggle="modal">戻る</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white" id="deleteModalLabel">データ削除</h5>
+            </div>
+            <div class="modal-body">
+                <p>この作品を一覧から削除しますか？</p>
+                <p>評価とコメントは削除されます。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger w-100" id="deleteBtn" data-bs-dismiss="modal">削除</button>
+                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal" data-bs-target="#animeIdModal" data-bs-toggle="modal">戻る</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    'use strict';
+
+    const searchResult = document.getElementById('searchResult');
+    searchResult.style.display = 'none';
+
+    const userId = document.getElementById('userId').textContent;
+
+    const titleDom = document.getElementById('title');
+    const yearDom = document.getElementById('year');
+    const seasonDom = document.getElementById('season');
+    const sortDom = document.getElementById('sort');
+
+    var optionDom = '<option value="" selected>指定しない</option>';
+    const currentYear = new Date().getFullYear();
+    for (var i = currentYear; i >= 1970; i--) {
+        var option = '<option value="' + i + '">' + i + '</option>';
+        optionDom += option;
+    }
+    yearDom.insertAdjacentHTML('beforeend', optionDom);
+
+    yearDom.addEventListener('change', function() {
+        if (this.value === '') {
+            seasonDom.disabled = true;
+        } else {
+            seasonDom.disabled = false;
+        }
+    });
+
+    const prevBtnDom = document.getElementById('prevBtn');
+    const nextBtnDom = document.getElementById('nextBtn');
+
+    function showPage(totalCount, currentPage) {
+        let allPage = Math.ceil(totalCount / 30);
+        const page = document.getElementById('showPage');
+        page.innerHTML = '';
+        page.insertAdjacentHTML(
+          'afterbegin',
+          `${currentPage}&nbsp;/&nbsp;${allPage}`
+        );
+    }
+
+    function addAnimeList(data) {
+        const container = document.getElementById('animeList');
+        const animeListCard = document.getElementById('animeListCard');
+
+        container.innerHTML = '';
+        let imageUrl;
+
+        for (let i = 0; i < data.animeList.length; i++) {
+            if (data.animeList[i].ogImageUrl !== null && data.animeList[i].ogImageUrl.slice(0, 4) === 'http') {
+              imageUrl = data.animeList[i].ogImageUrl;
+            } else {
+              imageUrl = '/images/noimg.png';
+            }
+
+            container.insertAdjacentHTML(
+                'beforeend',
+                `
+                <div class="card m-2 anime-card" data-id="${data.animeList[i].id}">
+                    <div class="card-body">
+                        <div class="anime-img-container mt-1">
+                            <img class="rounded img-thumbnail" src="${imageUrl}">
+                        </div>
+                        <div class="d-block mt-3 align-content-center text-center">
+                            <h5>${data.animeList[i].title}</h5>
+                            <p class="mt-2 mb-1">
+                                <span class="badge text-bg-primary fs-6">${data.animeList[i].media}</span>
+                                <span class="badge text-bg-primary fs-6">${data.animeList[i].epCount}話</span>
+                            </p>
+                            <p class="my-1"><span class="badge text-bg-success fs-6">${data.animeList[i].season}</span></p>
+                        </div>
+                    </div>
+                </div>
+                `
+            );
+        }
+
+        document.querySelectorAll('.anime-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.anime-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', () => {
+        const title = titleDom.value;
+        const year = yearDom.value;
+        const season = seasonDom.value;
+        const sort = sortDom.value;
+        fetch(`/api/anime?title=${title}&year=${year}&season=${season}&sort=${sort}&page=1`)
+            .then(res => {
+                if (res.status === 400) {
+                } else {
+                    res.json()
+                        .then(data => {
+                            document.getElementById('totalCount').innerHTML = `：${data.totalCount}件`;
+
+                            if (data.totalCount === 0) {
+                                searchResult.style.display = 'none';
+                            } else {
+                                searchResult.style.display = '';
+                            }
+
+                            showPage(data.totalCount, 1);
+
+                            nextBtnDom.value = data.nextPage;
+                            prevBtnDom.value = data.prevPage;
+
+                            if (data.nextPage == -1) {
+                                nextBtnDom.disabled = true;
+                            } else {
+                                nextBtnDom.disabled = false;
+                            }
+
+                            addAnimeList(data);
+                        })
+                }
+            });
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        const title = titleDom.value;
+        const year = yearDom.value;
+        const season = seasonDom.value;
+        const sort = sortDom.value;
+        const page = prevBtnDom.value;
+        fetch(`/api/anime?title=${title}&year=${year}&season=${season}&sort=${sort}&page=${page}`)
+            .then(res => {
+                if (res.status === 400) {
+                } else {
+                    res.json()
+                        .then(data => {
+                            showPage(data.totalCount, page);
+
+                            nextBtnDom.value = data.nextPage;
+                            prevBtnDom.value = data.prevPage;
+
+                            if (data.prevPage == -1) {
+                                prevBtnDom.disabled = true;
+                            } else {
+                                prevBtnDom.disabled = false;
+                            }
+
+                            if (data.nextPage == -1) {
+                                nextBtnDom.disabled = true;
+                            } else {
+                                nextBtnDom.disabled = false;
+                            }
+
+                            addAnimeList(data);
+                        })
+                }
+            });
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        const title = titleDom.value;
+        const year = yearDom.value;
+        const season = seasonDom.value;
+        const sort = sortDom.value;
+        const page = nextBtnDom.value;
+        fetch(`/api/anime?title=${title}&year=${year}&season=${season}&sort=${sort}&page=${page}`)
+            .then(res => {
+                if (res.status === 400) {
+                } else {
+                    res.json()
+                        .then(data => {
+                            showPage(data.totalCount, page);
+
+                            nextBtnDom.value = data.nextPage;
+                            prevBtnDom.value = data.prevPage;
+
+                            if (data.prevPage == -1) {
+                                prevBtnDom.disabled = true;
+                            } else {
+                                prevBtnDom.disabled = false;
+                            }
+
+                            if (data.nextPage == -1) {
+                                nextBtnDom.disabled = true;
+                            } else {
+                                nextBtnDom.disabled = false;
+                            }
+
+                            addAnimeList(data);
+                        })
+                }
+            });
+    });
+
+    document.getElementById('addBtn').addEventListener('click', () => {
+        const selectedCard = document.querySelector('.anime-card.selected');
+        if (selectedCard) {
+            const selectedId = selectedCard.getAttribute('data-id');
+            const rate = document.getElementById('rate').value;
+            const comment = document.getElementById('comment').value;
+            const data = {
+                animeId: selectedId,
+                rate: rate,
+                comment: comment,
+                userId : userId
+            }
+            console.log(data);
+            fetch(`/api/anilog/insert`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(res => {
+                console.log(res);
+                if (res.status === 400) {
+                    res.json()
+                    .then(data => {
+                    })
+                } else {
+                    aniLogList(userId);
+                }
+            })
+            console.log('Selected Anime ID:', selectedId);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('staticBackdrop'));
+            modal.hide();
+        } else {
+            console.log('No anime selected');
+        }
+    });
+
+
+    function aniLogDetail(selectedId) {
+    fetch(`/api/anilog/detail?anime_id=${selectedId}&user_id=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('animeDetail');
+            container.innerHTML = '';
+            let imageUrl;
+
+            if (data.anime.ogImageUrl !== null && data.anime.ogImageUrl.slice(0, 4) === 'http') {
+                imageUrl = data.anime.ogImageUrl;
+            } else {
+                imageUrl = '/images/noimg.png';
+            }
+
+            let rate = '';
+            if (data.review.rate != 0) {
+                for (let i = 0; i < data.review.rate; i++) {
+                    rate += '★';
+                }
+                for (let i = 0; i < 5 - data.review.rate; i++) {
+                    rate += '☆';
+                }
+            } else {
+                rate = '未評価';
+            }
+
+            container.innerHTML =
+                `
+                <div class="card mb-2 anime-card" data-id="${data.anime.id}">
+                    <div class="card-body">
+                        <div class="anime-img-container mt-1">
+                            <img class="rounded img-thumbnail" src="${imageUrl}">
+                        </div>
+                        <div class="d-block mt-3 align-content-center text-center">
+                            <h5>${data.anime.title}</h5>
+                            <p class="mt-2 mb-1">
+                                <span class="badge text-bg-primary fs-6">${data.anime.media}</span>
+                                <span class="badge text-bg-primary fs-6">${data.anime.epCount}話</span>
+                            </p>
+                            <p class="my-1"><span class="badge text-bg-success fs-6">${data.anime.season}</span></p>
+                            <p class="my-1"><span class="badge text-white text-bg-warning fs-6">${rate}</span></p>
+                        </div>
+                        <a href="${data.anime.officialSiteUrl}" target="_blank">
+                            <button type="button" class="btn btn-primary">公式サイト</button>
+                        </a>
+                    </div>
+                </div>
+                <div class="card mb-2 anime-card">
+                    <div class="card-header">
+                        コメント
+                    </div>
+                    <div class="card-body">
+                        <p>${data.review.comment}</p>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary w-100 mb-2 edit-btn" data-id="${data.anime.id}" data-rate="${data.review.rate}" data-comment="${data.review.comment}" data-bs-target="#editModal" data-bs-toggle="modal">評価・コメントを編集</button>
+                <button type="button" class="btn btn-danger text-center w-100" data-id="${data.anime.id}" data-bs-target="#deleteModal" data-bs-toggle="modal">この作品を一覧から削除</button>
+                `;
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.getElementById('editRate').value = this.getAttribute('data-rate');
+                    document.getElementById('editComment').value = this.getAttribute('data-comment');
+                });
+            });
+        });
+    }
+
+
+    function addAniLogList(data) {
+        const container = document.getElementById('aniLogList');
+        container.innerHTML = '';
+        let imageUrl;
+
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].ogImageUrl !== null && data[i].ogImageUrl.slice(0, 4) === 'http') {
+                imageUrl = data[i].ogImageUrl;
+            } else {
+                imageUrl = '/images/noimg.png';
+            }
+
+            container.insertAdjacentHTML(
+                'beforeend',
+                `
+                <div class="card m-2 anime-card" data-id="${data[i].id}">
+                    <div class="card-body">
+                        <div class="anime-img-container mt-1">
+                            <img class="rounded img-thumbnail" src="${imageUrl}">
+                        </div>
+                        <div class="d-block mt-3 align-content-center text-center">
+                            <h5>${data[i].title}</h5>
+                            <p class="mt-2 mb-1">
+                                <span class="badge text-bg-primary fs-6">${data[i].media}</span>
+                                <span class="badge text-bg-primary fs-6">${data[i].epCount}話</span>
+                            </p>
+                            <p class="my-1"><span class="badge text-bg-success fs-6">${data[i].season}</span></p>
+                        </div>
+                    </div>
+                </div>
+                `
+            );
+        }
+
+        document.querySelectorAll('.anime-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const selectedId = this.getAttribute('data-id');
+                aniLogDetail(selectedId);
+                const animeIdModal = new bootstrap.Modal(document.getElementById('animeIdModal'));
+                animeIdModal.show();
+            });
+        });
+    }
+
+    document.getElementById('updateBtn').addEventListener('click', () => {
+        const selectedCard = document.querySelector('.edit-btn');
+        const selectedId = selectedCard.getAttribute('data-id');
+        const rate = document.getElementById('editRate').value;
+        const comment = document.getElementById('editComment').value;
+        const data = {
+            animeId: selectedId,
+            rate: rate,
+            comment: comment,
+            userId: userId
+        }
+        console.log(data);
+        fetch(`/api/anilog/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(res => {
+            console.log(res);
+            if (res.status === 400) {
+                res.json()
+                .then(data => {
+                })
+            } else {
+                aniLogList(userId);
+                aniLogDetail(selectedId);
+            }
+        })
+    });
+
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+        const selectedCard = document.querySelector('.edit-btn');
+        const selectedId = selectedCard.getAttribute('data-id');
+        const data = {
+            animeId: selectedId,
+            rate: 0,
+            comment: "",
+            userId: userId
+        }
+        console.log(data);
+        fetch(`/api/anilog/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(res => {
+            console.log(res);
+            if (res.status === 400) {
+                res.json()
+                .then(data => {
+                })
+            } else {
+                aniLogList(userId);
+            }
+        })
+    });
+
+    aniLogList(userId);
+
+    function aniLogList(user) {
+        const aniLogList = document.getElementById('aniLogList');
+        fetch(`/api/anilog?user_id=${user}`)
+        .then(res => {
+            if (res.status === 400) {
+            } else {
+                res.json()
+                    .then(data => {
+                        addAniLogList(data);
+                    })
+            }
+        });
+    }
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+</body>
+</html>
